@@ -40,6 +40,7 @@ def create_tables():
     """)
     conn.commit()
 create_tables()
+#Creation of the Indexes
 def create_indexes():
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idxrating
@@ -50,11 +51,11 @@ def create_indexes():
         ON Ratings(show_id)
     """)
     cursor.execute("""
-        CREATE INDEX IF NOT EXISTS idxshowgenre
+        CREATE INDEX IF NOT EXISTS idxgenre
         ON Show_Genres(genre_id)
     """)
     cursor.execute("""
-        CREATE INDEX IF NOT EXISTS idxshowgenreshow
+        CREATE INDEX IF NOT EXISTS idxgenreshow
         ON Show_Genres(show_id)
     """)
     conn.commit()
@@ -141,19 +142,23 @@ with tab2:
         else:
             try:
                 conn.execute("BEGIN")
+#Injections
                 cursor.execute("""
                     INSERT INTO TV_Shows (movie, runtime, certificate, description)
                     VALUES (?, ?, ?, ?)
                 """, (movie, runtime, certificate, description))
                 show_id = cursor.lastrowid
+#Injections
                 cursor.execute("""
                     INSERT INTO Ratings (show_id, rating, votes)
                     VALUES (?, ?, ?)
                 """, (show_id, rating, votes))
+#Injections
                 cursor.execute("""
                     INSERT INTO Show_Genres (show_id, genre_id)
                     VALUES (?, ?)
                 """, (show_id, genre_dict[selected_genre]))
+#Transcation
                 conn.commit()
                 st.success("Show added!")
             except Exception as e:
@@ -165,11 +170,13 @@ with tab2:
     selected_id = st.selectbox("Select Show ID", show_ids)
     new_rating = st.slider("New Rating", 0.0, 10.0, 5.0, key="update")
     if st.button("Update"):
+#Injection
         cursor.execute("""
             UPDATE Ratings
             SET rating = ?
             WHERE show_id = ?
         """, (new_rating, selected_id))
+#Transcation
         conn.commit()
         st.success("Updated!")
         st.rerun()
@@ -195,6 +202,7 @@ with tab3:
     min_rating = st.slider("Min Rating", 0.0, 10.0, 0.0)
     max_rating = st.slider("Max Rating", 0.0, 10.0, 10.0)
     selected_genre_report = st.selectbox("Genre", list(genre_dict.keys()), key="report")
+#Use of Index
     query = """
     SELECT t.movie, r.rating, t.runtime, g.genre_name
     FROM TV_Shows t
@@ -216,6 +224,7 @@ with tab3:
     st.dataframe(df_results)
     st.divider()
     st.subheader("📊 Statistics")
+#Use of Index
     avg_rating = cursor.execute("""
     SELECT AVG(rating) FROM Ratings
     WHERE rating BETWEEN ? AND ?
